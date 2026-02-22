@@ -17,7 +17,7 @@ export default function Home() {
     alert(accountCredentials.email)
     alert(accountCredentials.password)
     axios
-      .post("http://localhost:8000/test", {
+      .post("http://localhost:8000/api/login", {
         email: accountCredentials.email,
         password: accountCredentials.password,
       })
