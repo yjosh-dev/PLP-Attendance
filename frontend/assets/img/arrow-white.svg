@@ -1,0 +1,9 @@
+<!--?xml version="1.0" encoding="utf-8"?-->
+<svg width="800px" height="800px" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Circle with green border -->
+  <circle cx="8" cy="8" r="7.5" stroke="#FFFF" stroke-width="1" fill="none"></circle>
+
+  <!-- Arrow -->
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M8 4V7H3V9H8V12H9L13 8L9 4H8Z" fill="#FFFF"></path>
+</svg>

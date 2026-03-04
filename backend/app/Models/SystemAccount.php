@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Laravel\Sanctum\HasApiTokens;
 
 class SystemAccount extends Model
-{
+{    
+     use HasApiTokens;
      public $timestamps = false;
-
+  
      protected $table = 'system_account';
      protected $primaryKey = 'employee_id';
     

@@ -6,11 +6,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash; 
 use Illuminate\Support\Facades\RateLimiter; 
 
-use  App\Models\SystemAccount;
+use App\Models\SystemAccount;
 
 class SystemLoginController extends Controller
 {
-    public function systemLogin(Request $request) {
+    public function SystemLogin(Request $request) {
         
         // 1. Extract and validate request body
         $validated = $request->validate([
@@ -20,6 +20,8 @@ class SystemLoginController extends Controller
       
         
         // 2. Check login attempts for rate limiting 
+        // reminder to self:  might refactor to include ip address
+        
          $key = 'login' . $validated['account_email'];
 
          if(RateLimiter::tooManyAttempts($key, 5)) {
@@ -36,6 +38,7 @@ class SystemLoginController extends Controller
 
          if(!$user || !Hash::check($validated['account_password'], $user->account_password) ) {
             // Increment attempts counter and set expiration time 
+            // Check if query response is empty(no email found) & compare hashed password
             RateLimiter::hit($key, 300); 
             return response()->json([
                 "success" => false,
@@ -44,12 +47,23 @@ class SystemLoginController extends Controller
          }
         
          // 4. Return response upon success and clear attempts
+         // Issue token with expiration
+         $token = $user->createToken('auth_token', ['*'], now()->addWeek(1))->plainTextToken;
          RateLimiter::clear($key); 
          return response()->json([
               "success" => true,
               "message" => "Account successfully logged in.",
-              "id" => $user->employee_id
+              "token" => $token
          ], 200);
          
     }
+
+    public function SystemLogout(Request $request) {
+        $request->user()->currentAccessToken()->delete();
+        
+        return response()->json([
+             "success" => true,
+             "message" => "Account logout successfully"
+         ], 200);
+    }   
 }
