@@ -16,6 +16,7 @@ return new class extends Migration
             $table->date('flag_ceremony_date');
             $table->time('flag_ceremony_start');
             $table->time('flag_ceremony_end');
+            $table->enum('status', ['pending', 'cancelled', 'completed']);
             $table->unsignedInteger('created_by');
             $table->timestamp('created_at')->useCurrent(); 
         });

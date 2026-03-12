@@ -14,19 +14,24 @@ import axios from "axios";
 
 const navItems = [
   {
-    section: "MENU",
+    section: "ANALYTICS",
     items: [
       { icon: LayoutDashboard, label: "Dashboard" },
       { icon: Monitor, label: "Monitoring" },
       { icon: ClipboardList, label: "Attendance" },
     ],
   },
+  {
+    section: "FLAG CEREMONY",
+    items: [
+      { icon: Info, label: "Set Schedule" },
+      { icon: Info, label: "Ceremony Records" },
+    ],
+  },
   { section: "EMPLOYEES", items: [{ icon: Users, label: "Manage" }] },
   {
     section: "GENERAL",
-    items: [
-      { icon: Info, label: "About" },
-    ],
+    items: [{ icon: Info, label: "About" }],
   },
 ];
 
@@ -37,7 +42,6 @@ export default function Navbar() {
   const handleClick = (value) => {
     setNavbar(value);
   };
-
 
   return (
     <div

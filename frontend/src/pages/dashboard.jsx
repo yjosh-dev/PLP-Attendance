@@ -13,6 +13,10 @@ import LoadingModal from "../components/modals/loadingModal";
 import ConfirmationModal from "../components/modals/confirmatioModal";
 import EmployeeList from "./Employee/employeeList";
 import AddEmployee from "./Employee/addEmployee";
+import ScheduleCeremony from "./Employee/ScheduleCeremony";
+import NextCeremony from "./Employee/NextCeremony";
+import NextScheduleTimer from "./Employee/NextScheduleTimer";
+import AttendanceLogin from "./Employee/AttendanceLogin";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -79,10 +83,19 @@ export default function Dashboard() {
   const render = (navbar) => {
       switch (navbar) {
          case "Add Employee":
-          return <AddEmployee />
+            return <AddEmployee />
 
          case "Manage":
-          return <EmployeeList />
+            return <EmployeeList />
+
+         case "Set Schedule":
+            return <ScheduleCeremony />
+        
+         case "Monitoring":
+            return <NextScheduleTimer />
+
+         case "Attendance":
+            return <AttendanceLogin />
       }
   }
 
