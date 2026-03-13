@@ -16,8 +16,8 @@ return new class extends Migration
             $table->unsignedBigInteger('flag_ceremony_id');
             $table->unsignedBigInteger('employee_id');
             $table->time('time_in');
-            $table->time('time_out');
-            $table->enum('status', ['pending', 'present', 'early-out','absent', 'excused']);   
+            $table->time('time_out')->nullable;
+            $table->enum('status', ['pending', 'present', 'early-out','absent', 'excused'])->pending('pending');   
 
             $table->foreign('flag_ceremony_id')
                    ->references('flag_ceremony_id')
@@ -31,9 +31,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('flag_ceremony_record');

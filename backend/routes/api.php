@@ -27,8 +27,6 @@ Route::post('/testpost', [TestPostController::class, 'TestPost']);
 Route::post('/reg_system_account', [RegisterSystemAccount::class, 'InsertSysAccountRecord']);
 Route::post('/login', [SystemLoginController::class, 'SystemLogin']);   
 
-Route::get("/testing", [testController::class, 'TestController']);
-
 // Protected api endpoint via sanctum middleware
 Route::middleware('auth:sanctum')->group(function() {
     Route::post('/logout', [SystemLoginController::class, 'SystemLogout']);
@@ -44,5 +42,5 @@ Route::middleware('auth:sanctum')->group(function() {
     Route::get('/me', function (Request $request) {
         return response()->json(["message" => "authenticated"]);
     });
-    Route::get('/test', [testController::class, 'TestController']);
+    Route::get('/test', [EmployeeAttendane::class, 'attendanceTimeIn']);
 });
