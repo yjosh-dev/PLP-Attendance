@@ -16,8 +16,13 @@ use App\DTO\ScheduleDataDTO;
 class EmployeeAttendance extends Controller
 {
     public function attendanceTimeIn(Request $request) {
+
+       $validated = $request->validate([
+         "employee_id" => "required|max:10"
+       ]);
+
        // check first if the employee exist
-       $userExist = $this->fetchUser($request->input('employee_id'));
+       $userExist = $this->fetchUser($validated['employee_id']);
        if(!$userExist){
           return response()->json([
              "success" => false,
@@ -31,17 +36,38 @@ class EmployeeAttendance extends Controller
           return response()->json([
              "success" => false,
              "message" => "No upcoming flag ceremony"
-          ], 400);
+          ], 404);
        }
 
       // check if on time
        $OnTime = $this->checkTime();
-       if($OnTime){
+       if(!$OnTime){
           return response()->json([
              "success" => false,
              "message" => "Too late or too early"
-          ], 400);
+          ], 404);
        }
+ 
+      // check if already completed a attendance
+      $check = $this->checkStatus($validated['employee_id']);
+      if($check) return $check;
+      
+      // check ceremony record of employee on current flag ceremony
+      // p.s dont mix the function parameter future STUPID ME
+      $alreadyDone = $this->FetchEmployeeCeremonyRecord($validated['employee_id'], $haveCeremonyToday['flag_ceremony_id']);
+      $flag_ceremony_id = $haveCeremonyToday['flag_ceremony_id'];
+      $employee_id = $validated['employee_id'];
+      $time_in = $OnTime;
+      $first_name = $userExist->first_name;
+
+      if(!$alreadyDone){
+         $response = $this->TimeIn($flag_ceremony_id, $employee_id, $time_in, $first_name, $userExist);
+          return $response;
+      }
+
+      $record_id = $alreadyDone['record_id'];
+      $response = $this->TimeOut($record_id, $OnTime, $first_name ,$userExist);
+      return $response;
     }
 
     private function fetchUser($employee_id){   
@@ -66,10 +92,10 @@ class EmployeeAttendance extends Controller
     private function fetchNextSchedule() {
        $now = Carbon::now('Asia/Manila');
        $nextSchedule = FlagCeremony::orderBy('flag_ceremony_date', 'asc')
-                                ->select('flag_ceremony_date', 'flag_ceremony_start')
+                                ->select('flag_ceremony_date', 'flag_ceremony_start', 'flag_ceremony_id')
                                 ->where('status', 'pending')
                                 ->firstOrFail();
-       return $data = array("now" => $now, "start_date" => $nextSchedule['flag_ceremony_date'], "start_time" => $nextSchedule['flag_ceremony_start']);
+       return $data = array("now" => $now, "start_date" => $nextSchedule['flag_ceremony_date'], "start_time" => $nextSchedule['flag_ceremony_start'], "flag_ceremony_id" => $nextSchedule['flag_ceremony_id']);
     }
 
     public function checkDate() {
@@ -78,14 +104,18 @@ class EmployeeAttendance extends Controller
          $now = Carbon::parse($data['now'])->format('Y-m-d');
          $start_date = $data['start_date'];
 
-         return $start_date == $now;
+         if($start_date == $now){
+            return $data;
+         }else{
+            return false;
+         }
 
       }catch(ModelNotFoundException $e){
          
       }
       
     }
-
+   
     public function checkTime(){
        $data = $this->fetchNextSchedule();
       
@@ -106,33 +136,90 @@ class EmployeeAttendance extends Controller
   
       // p.s IT WORKS PERFECTLY FINE DONT TOUCH IT
        if($seconds_now < $seconds_start && $seconds_now > $seconds_accepting){
-         return true;
+         return $raw_time;
        }
        return false;
     }
 
-    public function TimeIn($flag_ceremony_id, $employee_id, $time_in, $first_name){
-      try{
-        $response = FlagCeremonyRecord::create([
-           "flag_ceremony_id" => $flag_ceremony_id,
-           "employee_id" => $employee_id,
-           "time_in" => $time_in
-        ]);
+   public function TimeIn($flag_ceremony_id, $employee_id, $time_in, $first_name, $userExist) {
+      try {
+         $response = FlagCeremonyRecord::create([
+            "flag_ceremony_id" => $flag_ceremony_id,
+            "employee_id"      => $employee_id,
+            "time_in"          => $time_in
+         ]);
 
-        return response->json([
-           "success" => "true",
-           "message" => "Employee $first_name timed in at $time_in"
-        ], 200);
-      
-      }catch(err){
-        return response->json([
-           "success" => "false",
-           "message" => "Employee $first_name time in failed"
-        ], 400);
+         return response()->json([
+            "success" => "true",
+            "message" => "Employee $first_name timed in at $time_in",
+            "row"     => $response,
+            "data"    => $userExist
+         ], 200);
+
+         } catch (\Exception $e) {
+           return response()->json([
+            "success" => "false",
+            "message" => "Employee $first_name time in failed",
+            "error"   => $e->getMessage()  // helpful for debugging
+         ], 400);
+        }
       }
+
+   public function TimeOut($record_id, $time_out, $first_name, $userExist) {
+       try {
+         $response = FlagCeremonyRecord::where('record_id', $record_id)
+                                      ->update([
+                                       'time_out' => $time_out,
+                                       'status'   => 'present',
+                                       ]);
+                                    
+          return response()->json([
+              "success" => "true",
+              "message" => "Employee $first_name timed out at $time_out",
+              "data" =>  $userExist
+          ], 200);
+
+       }catch(\Exception $e) {
+          return response()->json([
+              "success" => "false",
+              "message" => "Employee $first_name time out failed",
+              "error"   => $e->getMessage()
+          ], 400);
+       }
     }
 
-    public function TimeOut(){
-      
+    public function FetchEmployeeCeremonyRecord($employee_id, $flag_ceremony_id){
+        $response = FlagCeremonyRecord::where('employee_id', $employee_id)
+                                     ->where('flag_ceremony_id', $flag_ceremony_id)
+                                     ->first();
+        return $response;
+    }
+
+    public function fetchStatus($employee_id){
+        $status = FlagCeremonyRecord::where('employee_id', $employee_id)
+                                    ->select('status')
+                                    ->first();
+        return $status;
+    }
+
+    public function checkStatus($employee_id){
+      $record = $this->fetchStatus($employee_id);
+      $status = $record?->status; // null-safe: returns null if no record found
+      switch($status){
+         case "present":
+         return response()->json([
+            "success" => false,
+            "message" => "Unable to process. You have already timed-out"
+         ], 400);
+
+         case "excused":
+         return response()->json([
+            "success" => false,
+            "message" => "Unable to process. You are already excused"
+         ], 400);
+
+         default:
+         return;
+       }
     }
 }

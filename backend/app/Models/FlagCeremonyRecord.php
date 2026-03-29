@@ -13,8 +13,8 @@ class FlagCeremonyRecord extends Model
     protected $fillable = [
         "flag_ceremony_id",
         "employee_id",
-        "time-in",
-        "time-out",
+        "time_in",
+        "time_out",
         "status"
     ];
 }

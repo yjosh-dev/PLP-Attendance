@@ -32,12 +32,12 @@ Route::middleware('auth:sanctum')->group(function() {
     Route::post('/logout', [SystemLoginController::class, 'SystemLogout']);
     Route::post('/register_employee', [RegisterEmployee::class, 'RegisterEmployee']);
     Route::post('/delete_employee', [RegisterEmployee::class, 'DeleteEmployee']);
+    Route::post('/attendance', [EmployeeAttendance::class, 'attendanceTimeIn']);
     Route::post('/create_schedule', [ScheduleCeremony::class, 'CreateSchedule']);
     Route::delete('/delete_schedule', [ScheduleCeremony::class, 'DeleteSchedule']);
     Route::get('/fetch_employees', [FetchAllEmployees::class, 'fetchAllEmployees']);
     Route::get('/fetch-user', [FetchUserDetails::class, 'fetchUser']);
     Route::get('/fetch_schedules', [FetchSchedule::class, 'FetchAllSchedule']);
-    Route::get('/attendance', [EmployeeAttendance::class, 'attendanceTimeIn']);
     Route::get('/fetch_next_ceremony', [FetchSchedule::class, 'FetchNextSchedule']);
     Route::get('/me', function (Request $request) {
         return response()->json(["message" => "authenticated"]);
