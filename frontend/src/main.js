@@ -1,6 +1,6 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
-import path from 'node:path';
-import started from 'electron-squirrel-startup';
+import { app, BrowserWindow, ipcMain } from "electron";
+import path from "node:path";
+import started from "electron-squirrel-startup";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -13,10 +13,8 @@ const createWindow = () => {
     width: 1000,
     height: 650,
     center: true,
-    resizable: false,
-    maximizable: false,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, "preload.js"),
     },
   });
 
@@ -24,27 +22,29 @@ const createWindow = () => {
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
-    mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
+    mainWindow.loadFile(
+      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
+    );
   }
 
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
 };
 
-ipcMain.handle('resize-window', (event, width, height) => {
-  const win = BrowserWindow.fromWebContents(event.sender)
-  if (!win) return
+ipcMain.handle("resize-window", (event, width, height) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return;
 
-  win.setSize(width, height, true) // true = animate
-  win.center()
-})
+  win.setSize(width, height, true); // true = animate
+  win.center();
+});
 
 app.whenReady().then(() => {
   createWindow();
 
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
-  app.on('activate', () => {
+  app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
@@ -54,8 +54,8 @@ app.whenReady().then(() => {
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
     app.quit();
   }
 });

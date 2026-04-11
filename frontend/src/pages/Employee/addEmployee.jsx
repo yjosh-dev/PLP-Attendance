@@ -389,11 +389,14 @@ export default function AddEmployee() {
       });
       if (imageFile) fd.append("profile_image", imageFile);
 
-      const res = await fetch("http://localhost:8000/api/register_employee", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: fd,
-      });
+     const res = await fetch("http://localhost:8000/api/register_employee", {
+       method: "POST",
+       headers: { 
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",  // ← inside headers
+      },
+       body: fd,
+});
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Registration failed");
 

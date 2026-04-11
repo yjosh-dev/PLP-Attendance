@@ -15,6 +15,8 @@ use App\Http\Controllers\EmployeeAttendance;
 
 use App\Http\Controllers\testController;
 
+use App\Http\Controllers\blade\auth\AuthController;
+
 Route::get('/test', function () {
     return response()->json([
         'message' => 'API is working'
@@ -42,5 +44,4 @@ Route::middleware('auth:sanctum')->group(function() {
     Route::get('/me', function (Request $request) {
         return response()->json(["message" => "authenticated"]);
     });
-    Route::get('/test', [EmployeeAttendane::class, 'attendanceTimeIn']);
 });

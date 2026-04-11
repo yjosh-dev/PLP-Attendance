@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 
 
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;  
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 use App\Models\FlagCeremony;
 use App\Models\FlagCeremonyRecord;
-
+use App\Mail\TimeAttendanceNotification;
 use App\DTO\ScheduleDataDTO;
 
 class EmployeeAttendance extends Controller
@@ -62,11 +63,29 @@ class EmployeeAttendance extends Controller
 
       if(!$alreadyDone){
          $response = $this->TimeIn($flag_ceremony_id, $employee_id, $time_in, $first_name, $userExist);
-          return $response;
+         $responseArray = $response->getData(true);
+         try {
+           Mail::to($userExist->account_email)
+           ->send(new TimeAttendanceNotification($responseArray));
+           \Log::info('MAIL SENT SUCCESSFULLY');
+         } catch (\Exception $e) {
+           \Log::error('MAIL FAILED: ' . $e->getMessage());
+           dd($e->getMessage());
+         }
+         return $response;
       }
 
       $record_id = $alreadyDone['record_id'];
       $response = $this->TimeOut($record_id, $OnTime, $first_name ,$userExist);
+      $responseArray = $response->getData(true);
+      try {
+           Mail::to($userExist->account_email)
+           ->send(new TimeAttendanceNotification($responseArray));
+           \Log::info('MAIL SENT SUCCESSFULLY');
+         } catch (\Exception $e) {
+           \Log::error('MAIL FAILED: ' . $e->getMessage());
+           dd($e->getMessage());
+         }
       return $response;
     }
 
@@ -148,7 +167,6 @@ class EmployeeAttendance extends Controller
             "employee_id"      => $employee_id,
             "time_in"          => $time_in
          ]);
-
          return response()->json([
             "success" => "true",
             "message" => "Employee $first_name timed in at $time_in",
@@ -163,7 +181,7 @@ class EmployeeAttendance extends Controller
             "error"   => $e->getMessage()  // helpful for debugging
          ], 400);
         }
-      }
+   }
 
    public function TimeOut($record_id, $time_out, $first_name, $userExist) {
        try {
@@ -222,4 +240,27 @@ class EmployeeAttendance extends Controller
          return;
        }
     }
+
+    public function sendAttendanceEmail($email, $first_name, $time_in, $userExist): void
+{
+    try {
+        Mail::to($email)->send(
+            new TimeAttendanceNotification([
+                'message'       => "Employee $first_name timed in at $time_in",
+                'employee_id'   => $userExist->employee_id,
+                'account_email' => $userExist->account_email,
+                'first_name'    => $userExist->first_name,
+                'middle_name'   => $userExist->middle_name,
+                'last_name'     => $userExist->last_name,
+                'department'    => $userExist->department,
+                'position'      => $userExist->position,
+            ])
+        );
+
+        Log::info('Attendance email sent to: ' . $email);
+
+    } catch (\Exception $e) {
+        Log::error('Failed to send attendance email: ' . $e->getMessage());
+    }
+}
 }

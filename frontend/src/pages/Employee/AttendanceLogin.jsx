@@ -29,8 +29,8 @@ function QRPlaceholder() {
   );
 }
 
-// ─── Inline ID Card (scaled to fit) ───────────────────────────────────────────
-function EmployeeIDCard({ employee }) {
+// ─── Inline ID Card ────────────────────────────────────────────────────────────
+function EmployeeIDCard({ employee, row, message }) {
   const {
     employee_id, account_email, first_name, middle_name,
     last_name, profile_image, department, position, phone_number,
@@ -42,6 +42,14 @@ function EmployeeIDCard({ employee }) {
   const empId     = String(employee_id);
   const org_name  = "GovOrg";
   const org_tagline = "Official Employee ID";
+
+  // Determine if this is time-in or time-out from the response
+  const isTimeIn  = !!row?.time_in;
+  const timeValue = row?.time_in ?? row?.time_out ?? null;
+  const actionLabel = isTimeIn ? "Time In" : "Time Out";
+  const actionColor = isTimeIn ? "#2d6a4f" : "#e07b39";
+  const actionBg    = isTimeIn ? "#d8f3dc" : "#fff3e0";
+  const actionBorder = isTimeIn ? "#52b788" : "#f4a261";
 
   return (
     <div className="relative select-none w-full" style={{ height: 190 }}>
@@ -140,6 +148,20 @@ function EmployeeIDCard({ employee }) {
           </div>
         </div>
       </div>
+
+      {/* ── Action badge pinned to top-right corner of card ── */}
+      <div style={{
+        position:"absolute", top:-10, right:-8,
+        display:"flex", alignItems:"center", gap:4,
+        background: actionBg, border:`1.5px solid ${actionBorder}`,
+        borderRadius:20, padding:"3px 9px",
+        boxShadow:"0 2px 8px rgba(0,0,0,0.08)"
+      }}>
+        <div style={{ width:5, height:5, borderRadius:"50%", background: actionColor }} />
+        <span style={{ fontSize:8.5, fontWeight:700, color: actionColor, letterSpacing:"0.08em" }}>
+          {actionLabel}{timeValue ? ` · ${timeValue}` : ""}
+        </span>
+      </div>
     </div>
   );
 }
@@ -185,9 +207,13 @@ export default function AttendanceLogin() {
   const [value,    setValue]    = useState("");
   const [uiState,  setUiState]  = useState("idle");
   const [employee, setEmployee] = useState(null);
+  const [row,      setRow]      = useState(null);
+  const [apiMsg,   setApiMsg]   = useState("");
   const [errMsg,   setErrMsg]   = useState("");
   const debounceRef = useRef(null);
   const resetRef    = useRef(null);
+
+  const isTimeIn = !!row?.time_in;
 
   const title =
     uiState === "loading" ? "Scanning…" :
@@ -197,7 +223,7 @@ export default function AttendanceLogin() {
 
   const subtitle =
     uiState === "loading" ? "Looking up your record…" :
-    uiState === "success" ? "Attendance logged successfully." :
+    uiState === "success" ? apiMsg :
     uiState === "error"   ? errMsg || "No record found. Please try again." :
                             "Scan or enter your Employee ID below.";
 
@@ -210,20 +236,37 @@ export default function AttendanceLogin() {
     if (!val.trim()) {
       setUiState("idle");
       setEmployee(null);
+      setRow(null);
+      setApiMsg("");
       return;
     }
 
     debounceRef.current = setTimeout(async () => {
       setUiState("loading");
       setEmployee(null);
+      setRow(null);
+      setApiMsg("");
+
       try {
         const token = localStorage.getItem("auth_token");
-        const res   = await fetch(`${API_URL}?employee_id=${encodeURIComponent(val.trim())}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ employee_id: val.trim() }),
         });
+
         const json = await res.json();
-        if (json.success && json.data) {
+
+        // API returns success as string "true" or boolean true
+        const isSuccess = json.success === true || json.success === "true";
+
+        if (isSuccess && json.data) {
           setEmployee(json.data);
+          setRow(json.row ?? null);       // present on time-in, absent on time-out
+          setApiMsg(json.message ?? "");
           setUiState("success");
         } else {
           setErrMsg(json.message || "Not found.");
@@ -238,8 +281,10 @@ export default function AttendanceLogin() {
         setValue("");
         setUiState("idle");
         setEmployee(null);
+        setRow(null);
+        setApiMsg("");
         setErrMsg("");
-      }, 2000);
+      }, 3000);
     }, 600);
   };
 
@@ -263,7 +308,6 @@ export default function AttendanceLogin() {
       {/* ── Header ── */}
       <div className="flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2.5">
-          
           <div>
             <h1 className="text-sm font-bold text-gray-700 leading-none">Attendance</h1>
             <p className="text-[10px] text-gray-400 mt-0.5 leading-none">
@@ -271,7 +315,6 @@ export default function AttendanceLogin() {
             </p>
           </div>
         </div>
-        
       </div>
 
       {/* ── Body ── */}
@@ -318,14 +361,22 @@ export default function AttendanceLogin() {
         {/* ── Success: show ID card ── */}
         {isSuccess && (
           <div className="relative w-full flex flex-col items-center gap-3" style={{ animation:"att-fadeup 0.3s ease" }}>
-            <EmployeeIDCard employee={employee} />
+            <EmployeeIDCard employee={employee} row={row} message={apiMsg} />
 
-            {/* Subtle "logged" badge below card */}
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-green-50 border border-green-100 rounded-full">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#32a852" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            {/* API message badge */}
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full"
+              style={{
+                background: isTimeIn ? "#f0fdf4" : "#fff7ed",
+                border: `1px solid ${isTimeIn ? "#bbf7d0" : "#fed7aa"}`
+              }}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                stroke={isTimeIn ? "#32a852" : "#e07b39"}
+                strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
-              <span className="text-[10px] font-semibold text-[#32a852]">Attendance recorded</span>
+              <span className="text-[10px] font-semibold" style={{ color: isTimeIn ? "#32a852" : "#e07b39" }}>
+                {apiMsg || "Attendance recorded"}
+              </span>
             </div>
           </div>
         )}
