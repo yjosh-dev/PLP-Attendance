@@ -17,6 +17,7 @@ import ScheduleCeremony from "./Employee/ScheduleCeremony";
 import NextCeremony from "./Employee/NextCeremony";
 import NextScheduleTimer from "./Employee/NextScheduleTimer";
 import AttendanceLogin from "./Employee/AttendanceLogin";
+import AppealList from "./Employee/AppealList";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -92,10 +93,15 @@ export default function Dashboard() {
             return <ScheduleCeremony />
         
          case "Monitoring":
-            return <NextScheduleTimer />
+            return <NextCeremony />
 
          case "Attendance":
             return <AttendanceLogin />
+
+         case "Appeal":
+            return <AppealList />
+
+            
       }
   }
 

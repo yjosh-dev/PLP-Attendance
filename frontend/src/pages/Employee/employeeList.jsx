@@ -14,6 +14,8 @@ import {
 import { NavbarContext } from "../../context/navbarProvider";
 
 import EmployeeCard from "../../components/ui/employeeCard";
+import EmployeeDetailModal from "./employeeDetailModal";
+import { ShowInfoContext } from "../../context/showInfoProvider";
 
 const SortBtn = ({ field, label, sortConfig, onSort }) => (
   <button
@@ -76,6 +78,8 @@ export default function EmployeeList() {
     field: "last_name",
     direction: "asc",
   });
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useContext(ShowInfoContext)
 
   useEffect(() => {
     setToken(localStorage.getItem("auth_token"));
@@ -138,6 +142,11 @@ export default function EmployeeList() {
       alert("Error deleting employee");
       setDeletingId(null);
     }
+  };
+
+  const handleCardClick = (employee) => {
+    setSelectedEmployee(employee);
+
   };
 
   const filtered = employeeRecord
@@ -287,11 +296,12 @@ export default function EmployeeList() {
                     duration: 0.2,
                     ease: "easeOut",
                   }}
+                  onClick={() => handleCardClick(emp)}
+                  className="cursor-pointer"
                 >
                   <EmployeeCard
                     key={emp.employee_id}
                     employee={emp}
-                    
                     isDeleting={deletingId === emp.employee_id}
                     onDelete={() =>
                       handleDelete(
@@ -306,6 +316,13 @@ export default function EmployeeList() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Employee Detail Modal */}
+      <EmployeeDetailModal
+        employee={selectedEmployee}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 }

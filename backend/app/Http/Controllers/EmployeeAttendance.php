@@ -110,7 +110,7 @@ class EmployeeAttendance extends Controller
 
     private function fetchNextSchedule() {
        $now = Carbon::now('Asia/Manila');
-       $nextSchedule = FlagCeremony::orderBy('flag_ceremony_date', 'asc')
+       $nextSchedule = FlagCeremony::orderBy('flag_ceremony_date', 'desc')
                                 ->select('flag_ceremony_date', 'flag_ceremony_start', 'flag_ceremony_id')
                                 ->where('status', 'pending')
                                 ->firstOrFail();
@@ -214,9 +214,13 @@ class EmployeeAttendance extends Controller
     }
 
     public function fetchStatus($employee_id){
-        $status = FlagCeremonyRecord::where('employee_id', $employee_id)
-                                    ->select('status')
-                                    ->first();
+        $today = Carbon::today('Asia/Manila')->format('Y-m-d');
+        $status = DB::table('flag_ceremony_record')
+                    ->join('flag_ceremony', 'flag_ceremony.flag_ceremony_id', '=', 'flag_ceremony_record.flag_ceremony_id')
+                    ->select('flag_ceremony_record.status')
+                    ->where('flag_ceremony.flag_ceremony_date', $today)
+                    ->where('flag_ceremony_record.employee_id', $employee_id)
+                    ->first();
         return $status;
     }
 

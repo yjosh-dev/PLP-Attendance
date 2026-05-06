@@ -22,6 +22,58 @@ const positions = [
   "Specialist",
 ];
 
+// Generate random password function
+const generateRandomPassword = () => {
+  const length = 12;
+  const uppercase = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lowercase = "abcdefghijkmnpqrstuvwxyz";
+  const numbers = "23456789";
+  const special = "!@#$%&*";
+  
+  let password = "";
+  password += uppercase[Math.floor(Math.random() * uppercase.length)];
+  password += lowercase[Math.floor(Math.random() * lowercase.length)];
+  password += numbers[Math.floor(Math.random() * numbers.length)];
+  password += special[Math.floor(Math.random() * special.length)];
+  
+  const allChars = uppercase + lowercase + numbers + special;
+  for (let i = password.length; i < length; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)];
+  }
+  
+  // Shuffle the password
+  return password.split('').sort(() => Math.random() - 0.5).join('');
+};
+
+// Philippine phone number validation
+const validatePhilippinePhone = (phone) => {
+  // Remove common formatting characters
+  const clean = phone.replace(/[\s\-\(\)\+]/g, '');
+  
+  // Philippine number patterns:
+  // 09XXXXXXXXX (11 digits starting with 09)
+  // 639XXXXXXXXX (12 digits starting with 639)
+  // +639XXXXXXXXX (13 digits starting with +639)
+  // 9XXXXXXXXX (10 digits starting with 9)
+  const patterns = [
+    /^09\d{9}$/,           // 09123456789
+    /^639\d{9}$/,          // 639123456789
+    /^\+639\d{9}$/,        // +639123456789
+    /^9\d{9}$/             // 9123456789
+  ];
+  
+  return patterns.some(pattern => pattern.test(clean));
+};
+
+// Format Philippine phone number for display
+const formatPhilippinePhone = (phone) => {
+  const clean = phone.replace(/[\s\-\(\)\+]/g, '');
+  if (clean.length === 11 && clean.startsWith('09')) {
+    return `${clean.slice(0,4)} ${clean.slice(4,7)} ${clean.slice(7)}`;
+  }
+  return phone;
+};
+
 function Field({
   label,
   name,
@@ -32,6 +84,8 @@ function Field({
   onChange,
   icon,
   half,
+  error,
+  onBlur
 }) {
   return (
     <div
@@ -52,14 +106,18 @@ function Field({
           name={name}
           value={value}
           onChange={onChange}
+          onBlur={onBlur}
           placeholder={placeholder}
           required={required}
-          className={`w-full bg-white border border-gray-200 rounded-lg text-[12px] text-gray-700 placeholder-gray-300
+          className={`w-full bg-white border rounded-lg text-[12px] text-gray-700 placeholder-gray-300
             focus:outline-none focus:ring-2 focus:ring-[#32a852]/25 focus:border-[#32a852]
             transition-all duration-150 py-2 ${icon ? "pl-9 pr-3" : "px-3"}
-            hover:border-gray-300`}
+            hover:border-gray-300 ${error ? "border-red-400 focus:ring-red-200" : "border-gray-200"}`}
         />
       </div>
+      {error && (
+        <p className="text-[9px] text-red-500 pl-0.5 mt-0.5">{error}</p>
+      )}
     </div>
   );
 }
@@ -330,6 +388,10 @@ export default function AddEmployee() {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const [successData, setSuccessData] = useState(null);
+  
+  // Validation errors state
+  const [errors, setErrors] = useState({});
+  
   const [form, setForm] = useState({
     employee_id: "",
     account_email: "",
@@ -345,8 +407,66 @@ export default function AddEmployee() {
     address: "",
   });
 
-  const handleChange = (e) =>
-    setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Auto-sync emails if they are the same field being edited
+    if (name === "account_email") {
+      setForm((p) => ({ ...p, [name]: value }));
+    } else if (name === "email") {
+      setForm((p) => ({ ...p, [name]: value }));
+    } else {
+      setForm((p) => ({ ...p, [name]: value }));
+    }
+    
+    // Clear error for this field when user starts typing
+    if (errors[name]) {
+      setErrors((p) => ({ ...p, [name]: "" }));
+    }
+  };
+
+  // Validate email domain (@plpasig.edu.ph)
+  const validateEmailDomain = (email) => {
+    if (!email) return false;
+    return email.toLowerCase().endsWith("@plpasig.edu.ph");
+  };
+
+  // Validate field on blur
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    
+    if (name === "account_email" || name === "email") {
+      if (value && !validateEmailDomain(value)) {
+        setErrors((p) => ({ 
+          ...p, 
+          [name]: "Email must use @plpasig.edu.ph domain" 
+        }));
+      } else {
+        setErrors((p) => ({ ...p, [name]: "" }));
+      }
+    }
+    
+    if (name === "phone") {
+      if (value && !validatePhilippinePhone(value)) {
+        setErrors((p) => ({ 
+          ...p, 
+          phone: "Enter a valid Philippine number (e.g., 09123456789 or +639123456789)" 
+        }));
+      } else {
+        setErrors((p) => ({ ...p, phone: "" }));
+      }
+    }
+  };
+
+  // Generate random password
+  const handleGeneratePassword = () => {
+    const newPassword = generateRandomPassword();
+    setForm((p) => ({ ...p, account_password: newPassword }));
+    // Clear password error if exists
+    if (errors.account_password) {
+      setErrors((p) => ({ ...p, account_password: "" }));
+    }
+  };
 
   const handleImage = (e) => {
     const file = e.target.files[0];
@@ -374,9 +494,39 @@ export default function AddEmployee() {
       "phone",
       "address",
     ];
+    
     const missing = required.filter((f) => !form[f]);
     if (missing.length) {
       showToast("error", "Please fill in all required fields");
+      return;
+    }
+    
+    // Validate email domains
+    if (!validateEmailDomain(form.account_email)) {
+      setErrors((p) => ({ 
+        ...p, 
+        account_email: "Account email must use @plpasig.edu.ph domain" 
+      }));
+      showToast("error", "Account email must be a @plpasig.edu.ph address");
+      return;
+    }
+    
+    if (!validateEmailDomain(form.email)) {
+      setErrors((p) => ({ 
+        ...p, 
+        email: "Personal email must use @plpasig.edu.ph domain" 
+      }));
+      showToast("error", "Personal email must be a @plpasig.edu.ph address");
+      return;
+    }
+    
+    // Validate Philippine phone number
+    if (!validatePhilippinePhone(form.phone)) {
+      setErrors((p) => ({ 
+        ...p, 
+        phone: "Enter a valid Philippine number" 
+      }));
+      showToast("error", "Please enter a valid Philippine phone number");
       return;
     }
 
@@ -389,14 +539,14 @@ export default function AddEmployee() {
       });
       if (imageFile) fd.append("profile_image", imageFile);
 
-     const res = await fetch("http://localhost:8000/api/register_employee", {
-       method: "POST",
-       headers: { 
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",  // ← inside headers
-      },
-       body: fd,
-});
+      const res = await fetch("http://localhost:8000/api/register_employee", {
+        method: "POST",
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+        body: fd,
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Registration failed");
 
@@ -426,6 +576,7 @@ export default function AddEmployee() {
       });
       setPreview(null);
       setImageFile(null);
+      setErrors({});
     } catch (err) {
       showToast("error", err.message);
     } finally {
@@ -528,7 +679,7 @@ export default function AddEmployee() {
             </span>
           </div>
 
-          {/* Return button — empty, user will add function */}
+          {/* Return button */}
           <button
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-semibold text-gray-500 bg-white border border-gray-200 hover:border-gray-300 hover:text-gray-700 transition-all duration-150 active:scale-95"
             onClick={() => setNavbar("Manage")}
@@ -722,22 +873,35 @@ export default function AddEmployee() {
               label="Account Email"
               name="account_email"
               type="email"
-              placeholder="work@company.com"
+              placeholder="work@plpasig.edu.ph"
               required
               value={form.account_email}
               onChange={handleChange}
+              onBlur={handleBlur}
+              error={errors.account_email}
               icon={<IconMail />}
             />
-            <Field
-              label="Password"
-              name="account_password"
-              type="password"
-              placeholder="Min. 8 characters"
-              required
-              value={form.account_password}
-              onChange={handleChange}
-              icon={<IconLock />}
-            />
+            <div className="relative">
+              <Field
+                label="Password"
+                name="account_password"
+                type="password"
+                placeholder="Min. 8 characters"
+                required
+                value={form.account_password}
+                onChange={handleChange}
+                error={errors.account_password}
+                icon={<IconLock />}
+              />
+              <button
+                type="button"
+                onClick={handleGeneratePassword}
+                className="absolute right-1 top-7 px-2 py-1 text-[9px] font-medium text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 rounded transition-colors"
+                style={{ marginTop: "1px" }}
+              >
+                Generate
+              </button>
+            </div>
           </Section>
         </div>
 
@@ -815,21 +979,25 @@ export default function AddEmployee() {
                 label="Personal Email"
                 name="email"
                 type="email"
-                placeholder="personal@email.com"
+                placeholder="personal@plpasig.edu.ph"
                 required
                 half
                 value={form.email}
                 onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.email}
                 icon={<IconMail />}
               />
               <Field
                 label="Phone Number"
                 name="phone"
-                placeholder="+63 9XX XXX XXXX"
+                placeholder="09123456789"
                 required
                 half
                 value={form.phone}
                 onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.phone}
                 icon={<IconPhone />}
               />
             </Row>

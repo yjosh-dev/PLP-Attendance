@@ -20,10 +20,18 @@ class EmployeeAccount extends Model
     ];
 
     public function information() {
-       return $this->hasOne(EmployeeInformation::class, 'employee_id');
+        return $this->hasOne(EmployeeInformation::class, 'employee_id');
     }
 
     public function contact() {
          return $this->hasOne(EmployeeContact::class, 'employee_id');
+    }
+
+    public function history(){
+        return $this->hasOne(FlagCeremonyRecord::class, 'employee_id');
+    }
+
+    public function appeal(){
+        return $this->hasOne(EmployeeAppeal::class, 'employee_id');
     }
 }

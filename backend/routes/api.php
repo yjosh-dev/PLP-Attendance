@@ -12,8 +12,12 @@ use App\Http\Controllers\FetchAllEmployees;
 use App\Http\Controllers\ScheduleCeremony;
 use App\Http\Controllers\FetchSchedule;
 use App\Http\Controllers\EmployeeAttendance;
+use App\Http\Controllers\MonitorController;
 
 use App\Http\Controllers\testController;
+
+
+use App\Http\Controllers\blade\employee\AppealController;
 
 use App\Http\Controllers\blade\auth\AuthController;
 
@@ -45,3 +49,12 @@ Route::middleware('auth:sanctum')->group(function() {
         return response()->json(["message" => "authenticated"]);
     });
 });
+
+
+Route::get('/appeal', [AppealController::class, 'GetAllAppeal']);
+
+Route::post('/save_appeal', [AppealController::class, 'CreateAppeal']);
+
+Route::post('/accept_appeal', [AppealController::class, 'AcceptAppeal']);
+
+Route::get('/fetch_monitoring_dash', [MonitorController::class, 'Index']);

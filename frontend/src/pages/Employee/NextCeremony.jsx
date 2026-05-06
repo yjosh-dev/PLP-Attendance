@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Flag, RefreshCw } from "lucide-react";
+import MonitoringDashboard from "./MonitoringDashboard";
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
@@ -19,6 +20,13 @@ function fmtTime(str) {
   const [h, mi] = str.split(":");
   const hr = parseInt(h);
   return `${hr > 12 ? hr - 12 : hr || 12}:${mi} ${hr >= 12 ? "PM" : "AM"}`;
+}
+
+// Fix: construct date from parts to guarantee local time parsing
+function parseLocalDate(dateStr, timeStr) {
+  const [y, mo, d] = dateStr.split("-").map(Number);
+  const [h, mi, s] = timeStr.split(":").map(Number);
+  return new Date(y, mo - 1, d, h, mi, s || 0);
 }
 
 function CountUnit({ value, label }) {
@@ -88,7 +96,11 @@ export default function NextCeremony() {
         if (json.data.countdown?.is_past) {
           setIsPast(true);
         } else {
-          const target = new Date(`${json.data.flag_ceremony_date}T${json.data.flag_ceremony_start}:00`);
+          // Fix: use parseLocalDate instead of new Date(dateString)
+          const target = parseLocalDate(
+            json.data.flag_ceremony_date,
+            json.data.flag_ceremony_start
+          );
           startTicker(target);
         }
       } else {
@@ -112,10 +124,7 @@ export default function NextCeremony() {
       {/* Header */}
       <div className="flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[#32a852] flex items-center justify-center"
-            style={{ boxShadow: "0 3px 10px #32a85235" }}>
-            <Flag size={14} color="white" />
-          </div>
+         
           <div>
             <h1 className="text-sm font-bold text-gray-700 leading-none">Next Flag Ceremony</h1>
             <p className="text-[10px] text-gray-400 mt-0.5 leading-none">Countdown to the next scheduled ceremony</p>
@@ -158,7 +167,6 @@ export default function NextCeremony() {
         ) : !schedule ? (
           <div className="flex flex-col items-center gap-3 relative">
             <div className="w-12 h-12 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center">
-              <Flag size={20} className="text-gray-200" />
             </div>
             <div className="text-center">
               <p className="text-sm font-semibold text-gray-500">No upcoming ceremony</p>
@@ -167,18 +175,7 @@ export default function NextCeremony() {
           </div>
 
         ) : isPast ? (
-          <div className="flex flex-col items-center gap-3 relative">
-            <div className="w-12 h-12 rounded-full bg-green-50 border border-green-100 flex items-center justify-center">
-              <Flag size={20} className="text-[#32a852]" />
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-bold text-gray-700">Ceremony is now ongoing</p>
-              <p className="text-[11px] text-gray-400 mt-1">
-                {fmtDate(schedule.flag_ceremony_date)} · {fmtTime(schedule.flag_ceremony_start)} – {fmtTime(schedule.flag_ceremony_end)}
-              </p>
-            </div>
-          </div>
-
+          <MonitoringDashboard />
         ) : (
           <div className="flex flex-col items-center gap-8 relative">
             <div className="flex flex-col items-center gap-2">

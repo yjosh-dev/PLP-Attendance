@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Ellipsis, Building2, Mail, Phone, Hash, Trash2, X, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { ShowInfoContext } from "../../context/showInfoProvider";
 
 export default function EmployeeCard({ employee = {
   employee_id: null,
@@ -16,7 +17,7 @@ export default function EmployeeCard({ employee = {
   const [flipped, setFlipped] = useState(false);
   const initials = `${employee.first_name?.[0] ?? ""}${employee.last_name?.[0] ?? ""}`;
   const fullName = `${employee.first_name} ${employee.last_name}`;
-
+  const [isModalOpen, setIsModalOpen] = useContext(ShowInfoContext)
   return (
     <motion.div
       style={{ perspective: 1000 }}
@@ -72,7 +73,7 @@ export default function EmployeeCard({ employee = {
           </div>
 
           {/* INFO CARD */}
-          <div className="mx-2 mb-2 flex-1 bg-gray-50 border border-gray-100 rounded-lg p-2 flex flex-col justify-center gap-1.5">
+          <div className="mx-2 mb-2 flex-1 bg-gray-50 border border-gray-100 rounded-lg p-2 flex flex-col justify-center gap-1.5" onClick={() => {setIsModalOpen(true)}}>
             <div className="flex items-center gap-1.5">
               <Hash size={10} className="text-gray-300 shrink-0" />
               <span className="text-[10px] text-gray-300 font-mono truncate">{employee.employee_id}</span>

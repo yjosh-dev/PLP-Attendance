@@ -54,7 +54,9 @@
                 </table>
             </div>
 
-            <a href="#" class="btn">Login to your account</a>
+            <a href="http://192.168.100.229:8000/login" class="btn">
+               Login to your account
+            </a>
 
             <div class="warning">
                 ⚠ Please change your password after your first login and do not share these credentials with anyone.

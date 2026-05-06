@@ -3,19 +3,24 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\EmployeeAccount;
 
-class FlagCeremonyRecord extends Model
+class EmployeeAppeal extends Model
+
 {
     public $timestamps = false;
-    protected $table = "flag_ceremony_record";
-    protected $primaryKey = "record_id";
+
+    protected $table = 'employee_appeal';
+    protected  $primaryKey = 'id';
 
     protected $fillable = [
-        "flag_ceremony_id",
         "employee_id",
-        "time_in",
-        "time_out",
-        "status"
+        "date_excused",
+        "reason",
+        "note",
+        "proof_image",
+        "appeal_submitted_at",
+        "status",
     ];
 
     public function account(){

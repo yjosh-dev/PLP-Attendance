@@ -33,7 +33,7 @@
     </div>
 
     {{-- FORM --}}
-    <form method="POST" action='employee/login'>
+    <form method="POST" action='/login/employee'>
       @csrf
       <fieldset>
         <legend>Email</legend>

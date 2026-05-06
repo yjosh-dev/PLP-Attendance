@@ -28,7 +28,13 @@ const navItems = [
       { icon: Info, label: "Ceremony Records" },
     ],
   },
-  { section: "EMPLOYEES", items: [{ icon: Users, label: "Manage" }] },
+  { 
+    section: "EMPLOYEES", 
+    items: [
+      { icon: Users, label: "Manage" },
+      { icon: Monitor, label: "Appeal" },
+    ] ,
+  },
   {
     section: "GENERAL",
     items: [{ icon: Info, label: "About" }],
