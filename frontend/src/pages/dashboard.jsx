@@ -138,7 +138,7 @@ export default function Dashboard() {
           <div className="w-full h-[10%] ">
             <Header onLogout={() => setLogout(true)} />
           </div>
-          <div className="w-[97%] h-[85%] ml-3 mt-1 flex justify-center items-center">
+          <div className="w-[100%] h-[85%]  mt-1 flex justify-center items-center">
              {render(navbar)}
           </div>
         </div>
