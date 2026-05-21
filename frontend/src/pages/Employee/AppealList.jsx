@@ -43,7 +43,7 @@ function fmtDateTime(str) {
 
 const STATUS_STYLES = {
   WAITING: { badge: "bg-amber-50 border-amber-200 text-amber-700" },
-  APPROVED: { badge: "bg-green-50 border-green-200 text-green-700" },
+  ACCEPTED: { badge: "bg-green-50 border-green-200 text-green-700" },
   REJECTED: { badge: "bg-red-50 border-red-200 text-red-500" },
 };
 
@@ -338,7 +338,12 @@ export default function AppealList() {
     setActionLoading("approve");
     try {
       const appeal = appeals.find((a) => a.id === id);
-      const res = await fetch("http://127.0.0.1:8000/api/accept_appeal", {
+       console.log("Sending:", {  
+        employee_id: appeal.employee_id,
+        date_excused: appeal.date_excused,
+        id: appeal.id,
+      });
+      const res = await fetch("http://localhost:8000/api/accept_appeal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -351,7 +356,7 @@ export default function AppealList() {
       if (!res.ok) throw new Error(data.message || "Failed to approve");
 
       setAppeals((prev) =>
-        prev.map((a) => (a.id === id ? { ...a, status: "APPROVED" } : a)),
+        prev.map((a) => (a.id === id ? { ...a, status: "ACCEPTED" } : a)),
       );
       showToast("success", "Appeal approved successfully");
       setSelected(null);

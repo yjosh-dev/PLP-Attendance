@@ -114,4 +114,133 @@ class RegisterEmployee extends Controller
             'message' => 'Employee deleted successfully'
         ]);
     }
+
+      public function BulkRegisterEmployeeLight(Request $request)
+    {
+        $validated = $request->validate([
+            'employees' => 'required|array|min:1',
+            'employees.*.employee_id' => 'required|string',
+            'employees.*.first_name' => 'required|string|max:255',
+            'employees.*.last_name' => 'required|string|max:255',
+            'employees.*.account_email' => 'nullable|email',
+            'employees.*.account_password' => 'nullable|string|min:6',
+            'employees.*.middle_name' => 'nullable|string|max:255',
+            'employees.*.department' => 'nullable|string|max:255',
+            'employees.*.position' => 'nullable|string|max:255',
+            'employees.*.birthdate' => 'nullable|date',
+            'employees.*.profile_image' => 'nullable|string',
+            'employees.*.email' => 'nullable|email',
+            'employees.*.phone' => 'nullable|string|max:15',
+            'employees.*.address' => 'nullable|string|max:255',
+        ]);
+
+        $results = [
+            'created' => [],
+            'errors' => [],
+            'total' => count($validated['employees']),
+        ];
+
+        foreach ($validated['employees'] as $index => $employee) {
+            $rowNumber = $index + 1;
+
+            try {
+                // Check unique employee_id
+                if (EmployeeAccount::where('employee_id', $employee['employee_id'])->exists()) {
+                    throw new \Exception("Employee ID '{$employee['employee_id']}' already exists");
+                }
+
+                // Check unique account_email if provided
+                if (!empty($employee['account_email']) && 
+                    EmployeeAccount::where('account_email', $employee['account_email'])->exists()) {
+                    throw new \Exception("Account email '{$employee['account_email']}' already exists");
+                }
+
+                DB::beginTransaction();
+
+                // Generate default values for missing required fields
+                $accountEmail = $employee['account_email'] ?? strtolower($employee['first_name'] . '.' . $employee['last_name'] . '@company.com');
+                
+                // Ensure unique generated email
+                $baseEmail = $accountEmail;
+                $counter = 1;
+                while (EmployeeAccount::where('account_email', $accountEmail)->exists()) {
+                    $parts = explode('@', $baseEmail);
+                    $accountEmail = $parts[0] . $counter . '@' . $parts[1];
+                    $counter++;
+                }
+
+                $plainPassword = $employee['account_password'] ?? 'Welcome123';
+                $hashedPassword = bcrypt($plainPassword);
+
+                // Create Account
+                $account = EmployeeAccount::create([
+                    'employee_id' => $employee['employee_id'],
+                    'account_email' => $accountEmail,
+                    'account_password' => $hashedPassword,
+                ]);
+
+                // Create Information with defaults
+                EmployeeInformation::create([
+                    'employee_id' => $employee['employee_id'],
+                    'first_name' => $employee['first_name'],
+                    'middle_name' => $employee['middle_name'] ?? null,
+                    'last_name' => $employee['last_name'],
+                    'department' => $employee['department'] ?? 'Unassigned',
+                    'position' => $employee['position'] ?? 'Staff',
+                    'birthdate' => $employee['birthdate'] ?? '2000-01-01',
+                    'profile_image' => $employee['profile_image'] ?? 'default.jpg',
+                ]);
+
+                // Create Contact with defaults
+                EmployeeContact::create([
+                    'employee_id' => $employee['employee_id'],
+                    'email' => $employee['email'] ?? $accountEmail,
+                    'phone_number' => $employee['phone'] ?? 'Not provided',
+                    'address' => $employee['address'] ?? 'Not provided',
+                ]);
+
+                DB::commit();
+
+                // Send email notification (non-blocking)
+                try {
+                    Mail::to($accountEmail)->send(
+                        new AttendanceNotification([
+                            'first_name' => $employee['first_name'],
+                            'last_name' => $employee['last_name'],
+                            'email' => $accountEmail,
+                            'password' => $plainPassword,
+                            'employee_id' => $employee['employee_id'],
+                            'department' => $employee['department'] ?? 'Unassigned',
+                            'position' => $employee['position'] ?? 'Staff',
+                        ])
+                    );
+                } catch (\Exception $e) {
+                    \Log::warning("Bulk register email failed: " . $e->getMessage());
+                }
+
+                $results['created'][] = [
+                    'row' => $rowNumber,
+                    'employee_id' => $employee['employee_id'],
+                    'name' => $employee['first_name'] . ' ' . $employee['last_name'],
+                ];
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $results['errors'][] = [
+                    'row' => $rowNumber,
+                    'employee_id' => $employee['employee_id'] ?? 'Unknown',
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
+
+        $successCount = count($results['created']);
+        $errorCount = count($results['errors']);
+
+        return response()->json([
+            'success' => $successCount > 0,
+            'message' => "Processed: {$successCount} created, {$errorCount} failed",
+            'results' => $results,
+        ], $successCount > 0 ? 201 : 422);
+    }
 }

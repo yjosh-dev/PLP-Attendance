@@ -18,6 +18,10 @@ import NextCeremony from "./Employee/NextCeremony";
 import NextScheduleTimer from "./Employee/NextScheduleTimer";
 import AttendanceLogin from "./Employee/AttendanceLogin";
 import AppealList from "./Employee/AppealList";
+import BulkAdd from "./Employee/bulkAdd";
+import AnalyticsDashboard from "./Employee/Dashboard";
+import AdvancedAnalyticsDashboard from "./Employee/AnalyticsDashboard";
+import FlagCeremonyEventsList from "./Employee/FlagCeremonyEventList";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -83,6 +87,9 @@ export default function Dashboard() {
 
   const render = (navbar) => {
       switch (navbar) {
+         case "Dashboard":
+            return <AdvancedAnalyticsDashboard />
+
          case "Add Employee":
             return <AddEmployee />
 
@@ -95,13 +102,27 @@ export default function Dashboard() {
          case "Monitoring":
             return <NextCeremony />
 
-         case "Attendance":
+         case "Attendance": 
             return <AttendanceLogin />
 
          case "Appeal":
             return <AppealList />
 
+        case "Bulk Insert":
+            return <BulkAdd />
             
+        case "Ceremony Records":
+            return <FlagCeremonyEventsList />
+
+        default:
+            return (
+              <div className="w-full h-full flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-white/80 p-8 text-center">
+                <p className="text-sm font-semibold text-gray-600">No screen for &ldquo;{navbar}&rdquo; yet</p>
+                <p className="mt-2 text-xs text-gray-400 max-w-sm">
+                  Choose <span className="font-medium text-gray-600">Dashboard</span> under Analytics to open the monthly report, or pick another item that is wired in the app.
+                </p>
+              </div>
+            )
       }
   }
 
@@ -117,7 +138,7 @@ export default function Dashboard() {
           <div className="w-full h-[10%] ">
             <Header onLogout={() => setLogout(true)} />
           </div>
-          <div className="w-full h-[88%] flex justify-center items-center">
+          <div className="w-[97%] h-[85%] ml-3 mt-1 flex justify-center items-center">
              {render(navbar)}
           </div>
         </div>

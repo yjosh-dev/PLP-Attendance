@@ -61,32 +61,18 @@ class EmployeeAttendance extends Controller
       $time_in = $OnTime;
       $first_name = $userExist->first_name;
 
-      if(!$alreadyDone){
-         $response = $this->TimeIn($flag_ceremony_id, $employee_id, $time_in, $first_name, $userExist);
+      $status = $alreadyDone->status;
+
+      if($status === 'pending'){
+         $response = $this->TimeIn2($flag_ceremony_id, $employee_id, $time_in, $first_name, $userExist);
          $responseArray = $response->getData(true);
-         try {
-           Mail::to($userExist->account_email)
-           ->send(new TimeAttendanceNotification($responseArray));
-           \Log::info('MAIL SENT SUCCESSFULLY');
-         } catch (\Exception $e) {
-           \Log::error('MAIL FAILED: ' . $e->getMessage());
-           dd($e->getMessage());
-         }
+         return $response;
+      }else{
+         $record_id = $alreadyDone['record_id'];
+         $response = $this->TimeOut($record_id, $OnTime, $first_name ,$userExist);
+         $responseArray = $response->getData(true);
          return $response;
       }
-
-      $record_id = $alreadyDone['record_id'];
-      $response = $this->TimeOut($record_id, $OnTime, $first_name ,$userExist);
-      $responseArray = $response->getData(true);
-      try {
-           Mail::to($userExist->account_email)
-           ->send(new TimeAttendanceNotification($responseArray));
-           \Log::info('MAIL SENT SUCCESSFULLY');
-         } catch (\Exception $e) {
-           \Log::error('MAIL FAILED: ' . $e->getMessage());
-           dd($e->getMessage());
-         }
-      return $response;
     }
 
     private function fetchUser($employee_id){   
@@ -159,6 +145,29 @@ class EmployeeAttendance extends Controller
        }
        return false;
     }
+
+    public function TimeIn2($flag_ceremony_id, $employee_id, $time_in, $first_name, $userExist) {
+      try {
+        $response = FlagCeremonyRecord::where('flag_ceremony_id', $flag_ceremony_id)
+                                      ->where('employee_id', $employee_id)
+                                      ->update([
+                                          "status"  => "in",
+                                          "time_in" => now()
+                                      ]);
+       return response()->json([
+            "success" => true,
+            "message" => "Employee $first_name timed in successfully",
+            "updated" => $response,
+            "data"    => $userExist
+        ], 200);
+       } catch (\Exception $e) {
+          return response()->json([
+            "success" => false,
+            "message" => "Employee $first_name time in failed",
+            "error"   => $e->getMessage()
+          ], 400);
+        }
+   }
 
    public function TimeIn($flag_ceremony_id, $employee_id, $time_in, $first_name, $userExist) {
       try {
@@ -266,5 +275,28 @@ class EmployeeAttendance extends Controller
     } catch (\Exception $e) {
         Log::error('Failed to send attendance email: ' . $e->getMessage());
     }
-}
+  }
+  
+  public function MarkAbsent(Request $request){
+    $data = $request->validate([
+        "flag_ceremony_id" => 'required'
+    ]);
+
+    try {
+        FlagCeremonyRecord::where('flag_ceremony_id', $data['flag_ceremony_id'])
+            ->where('status', 'pending')
+            ->update(['status' => 'absent']);
+
+        return response()->json([
+            "success" => true,
+            "message" => "Pending records marked as absent"
+        ], 200);
+    }catch(\Exception $e) {
+       return response()->json([
+            "success" => false,
+            "message" => "Failed to mark absent",
+            "error" => $e->getMessage()
+        ], 400);
+      }
+   }    
 }

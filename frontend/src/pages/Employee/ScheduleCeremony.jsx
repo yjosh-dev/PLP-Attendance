@@ -316,7 +316,7 @@ export default function ScheduleCeremony() {
     setLoading(true);
     try {
       const token = localStorage.getItem("auth_token");
-      const res = await fetch("http://localhost:8000/api/create_schedule", {
+      const res = await fetch("http://localhost:8000/api/hello_test", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

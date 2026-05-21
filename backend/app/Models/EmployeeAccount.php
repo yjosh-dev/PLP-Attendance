@@ -28,7 +28,7 @@ class EmployeeAccount extends Model
     }
 
     public function history(){
-        return $this->hasOne(FlagCeremonyRecord::class, 'employee_id');
+        return $this->hasMany(FlagCeremonyRecord::class, 'employee_id');
     }
 
     public function appeal(){

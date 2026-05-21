@@ -5,6 +5,7 @@ namespace App\Http\Controllers\blade\auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 use App\Models\EmployeeAccount;
 
@@ -48,6 +49,20 @@ class AuthController extends Controller
 
     if (Hash::check($password, $account->account_password)) {
         $employee = EmployeeAccount::find($account->employee_id);
+        $result = DB::table('flag_ceremony_record as fcr')
+                    ->join('employee_account_information as eai', 'fcr.employee_id', '=', 'eai.employee_id')
+                    ->join('flag_ceremony as fc', 'fc.flag_ceremony_id', '=', 'fcr.flag_ceremony_id')
+                    ->select(
+                        'fcr.record_id',
+                        'fc.flag_ceremony_id',
+                        'fcr.employee_id',
+                        'fc.flag_ceremony_date',
+                        'fcr.time_in',
+                        'fcr.time_out',
+                        'fcr.status'
+                    )
+                    ->where('eai.employee_id', $account->employee_id)
+                    ->get();
 
         // Wrap in a collection so the blade can always @forelse properly
         $history = collect(
@@ -63,7 +78,7 @@ class AuthController extends Controller
         return view('layout.index', [
             'information' => $employee->information,
             'contact'     => $employee->contact,
-            'history'     => $history,
+            'history'     => $result,
             'appeals'     => collect(),
             'grade'       => $this->computeGrade($percent),
             'rate'        => number_format($percent, 1),

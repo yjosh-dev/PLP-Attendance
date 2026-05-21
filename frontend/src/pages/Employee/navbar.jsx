@@ -32,6 +32,7 @@ const navItems = [
     section: "EMPLOYEES", 
     items: [
       { icon: Users, label: "Manage" },
+      { icon: Monitor, label: "Bulk Insert" },
       { icon: Monitor, label: "Appeal" },
     ] ,
   },
